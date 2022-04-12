@@ -4,6 +4,7 @@ The Traveller RPG Mapping Application
 Starbase is a desktop application for generating and editing maps
 of regions of space for science fiction roleplaying games.
 
+![screenshot](https://github.com/simon-hibbs/StarBase/docs/images/Application_Window.png)
 
 ## Development
 StarBase is developed in the Python 2.7 programming language, and is open source software released under the GPL version 2 license. The source files and associated data files are all available on Github from the following URL:
