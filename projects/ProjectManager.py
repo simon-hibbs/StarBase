@@ -34,19 +34,19 @@ If the directory already contains a project, with will not be over-written.
         instructionsLabel = QLabel(instructions_text)
         projectListlabel = QLabel('Project List')
         self.projectListWidget = QListWidget()
-        self.pathTextLine = QLineEdit()
+        #self.pathTextLine = QLineEdit()
         
         dialogLayout.addWidget(instructionsLabel,0,0)
         dialogLayout.addWidget(projectListlabel,1,0)
         dialogLayout.addWidget(self.projectListWidget,2,0,8,1)
-        dialogLayout.addWidget(self.pathTextLine,10,0)
+        #dialogLayout.addWidget(self.pathTextLine,10,0)
 
         self.openProjectButton = QPushButton('Open Project')
         self.newProjectButton = QPushButton('Add Project')
         self.makeDefaultButton = QPushButton('Make Default')
         self.removeProjectButton = QPushButton('Remove Project')
         self.closeButton = QPushButton('Close')
-        self.pathButton = QPushButton('Change Path')
+        #self.pathButton = QPushButton('Change Path')
 
 ##        self.connect(openProjectButton, SIGNAL("clicked()"), self.openProject)
 ##        self.connect(newProjectButton, SIGNAL("clicked()"), self.newProject)
@@ -62,7 +62,7 @@ If the directory already contains a project, with will not be over-written.
         self.makeDefaultButton.clicked.connect(self.makeDefaultProject)
         self.removeProjectButton.clicked.connect(self.removeProject)
         self.closeButton.clicked.connect(self.close)
-        self.pathButton.clicked.connect(self.changePath)
+        #self.pathButton.clicked.connect(self.changePath)
         self.projectListWidget.currentRowChanged[int].connect(self.projectSelected)
 
         dialogLayout.addWidget(self.openProjectButton,2,1)
@@ -70,7 +70,7 @@ If the directory already contains a project, with will not be over-written.
         dialogLayout.addWidget(self.makeDefaultButton,4,1)
         dialogLayout.addWidget(self.removeProjectButton,5,1)
         dialogLayout.addWidget(self.closeButton,9,1)
-        dialogLayout.addWidget(self.pathButton,10,1)
+        #dialogLayout.addWidget(self.pathButton,10,1)
 
         self.setLayout(dialogLayout)
         self.setMinimumWidth(500)
@@ -141,6 +141,7 @@ If the directory already contains a project, with will not be over-written.
         #self.model.loadProjectData("starbase.ini")
         QDialog.done(self, result)
 
+    """
     def changePath(self):
         current_path = self.pathTextLine.text()
         dir_name = QFileDialog.getExistingDirectory(self,
@@ -159,10 +160,11 @@ If the directory already contains a project, with will not be over-written.
 
         self.projects[self.projectListWidget.currentRow()] = str(dir_name)
         self.pathTextLine.setText(dir_name)
-
+    """
 
     def projectSelected(self, row):
-        self.pathTextLine.setText(self.projects[row])
+        pass
+        #self.pathTextLine.setText(self.projects[row])
 
     def readProjectsFile(self):
         self.config.read('projects.ini')
