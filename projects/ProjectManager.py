@@ -27,16 +27,22 @@ class ProjectManager(QDialog):
 
         dialogLayout = QGridLayout()
 
+        instructions_text = """To open a project select it and click 'Open Project'.
+'Add Project' allows you to create/select a directory and add it to the list.
+If the directory already contains a project, with will not be over-written. 
+"""
+        instructionsLabel = QLabel(instructions_text)
         projectListlabel = QLabel('Project List')
         self.projectListWidget = QListWidget()
         self.pathTextLine = QLineEdit()
         
-        dialogLayout.addWidget(projectListlabel,0,0)
-        dialogLayout.addWidget(self.projectListWidget,1,0,8,1)
-        dialogLayout.addWidget(self.pathTextLine,9,0)
+        dialogLayout.addWidget(instructionsLabel,0,0)
+        dialogLayout.addWidget(projectListlabel,1,0)
+        dialogLayout.addWidget(self.projectListWidget,2,0,8,1)
+        dialogLayout.addWidget(self.pathTextLine,10,0)
 
         self.openProjectButton = QPushButton('Open Project')
-        self.newProjectButton = QPushButton('New Project')
+        self.newProjectButton = QPushButton('Add Project')
         self.makeDefaultButton = QPushButton('Make Default')
         self.removeProjectButton = QPushButton('Remove Project')
         self.closeButton = QPushButton('Close')
@@ -59,12 +65,12 @@ class ProjectManager(QDialog):
         self.pathButton.clicked.connect(self.changePath)
         self.projectListWidget.currentRowChanged[int].connect(self.projectSelected)
 
-        dialogLayout.addWidget(self.openProjectButton,1,1)
-        dialogLayout.addWidget(self.newProjectButton,2,1)
-        dialogLayout.addWidget(self.makeDefaultButton,3,1)
-        dialogLayout.addWidget(self.removeProjectButton,4,1)
-        dialogLayout.addWidget(self.closeButton,8,1)
-        dialogLayout.addWidget(self.pathButton,9,1)
+        dialogLayout.addWidget(self.openProjectButton,2,1)
+        dialogLayout.addWidget(self.newProjectButton,3,1)
+        dialogLayout.addWidget(self.makeDefaultButton,4,1)
+        dialogLayout.addWidget(self.removeProjectButton,5,1)
+        dialogLayout.addWidget(self.closeButton,9,1)
+        dialogLayout.addWidget(self.pathButton,10,1)
 
         self.setLayout(dialogLayout)
         self.setMinimumWidth(500)
@@ -74,6 +80,8 @@ class ProjectManager(QDialog):
 
 
     def openProject(self):
+        """Open the currently selected project in the main Starbase UI.
+        """
         try:
             project_path = self.projects[self.projectListWidget.currentRow()]
             self.model.loadProjectData(project_path)
@@ -88,6 +96,7 @@ class ProjectManager(QDialog):
             default_path = os.getcwd()
         else:
             default_path = self.projects[self.defaultProject]
+        
         dir_name = QFileDialog.getExistingDirectory(self,
                                                     'Select Project Directory',
                                                     default_path,
