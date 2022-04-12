@@ -1,0 +1,9 @@
+[Core]
+Name = Python Code
+Module = blank
+
+[Documentation]
+Author = Simon Hibbs
+Version = 0.1
+Website = http://www.example.com
+Description = A dummy world generator that produces desolate asteroid belts

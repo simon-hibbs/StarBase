@@ -1,0 +1,9 @@
+[Core]
+Name = Python Code
+Module = rikitiki
+
+[Documentation]
+Author = Simon Hibbs
+Version = 0.1
+Website = http://www.example.com
+Description = Implements the Mongoose Traveller world generation sequence
