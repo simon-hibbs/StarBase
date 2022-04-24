@@ -9,33 +9,19 @@ import os
 import sys
 import math
 from PySide import QtCore, QtGui
-######from PyQt4 import QtOpenGL
-
-#from .model import Models
-#from .starmap import MapGlyphs
-#from .starmap import MapScene
-#from .projects import ProjectManager
-#from .forms import WorldBrowser
-#from .forms import AllegianceEditor
-#from .forms import Trade
-#from .categories import WorldGenerator
-#from yapsy.PluginManager import PluginManager
-#####from forms import Trade
-#from .resources import starmap_rc
-#from . import log
-
-import model.Models as Models
-import starmap.MapGlyphs as MapGlyphs
-import starmap.MapScene as MapScene
-import projects.ProjectManager as ProjectManager
-import forms.WorldBrowser as WorldBrowser
-import forms.AllegianceEditor as AllegianceEditor
-import forms.Trade as Trade
+#from PyQt4 import QtOpenGL
+from model import Models
+from starmap import MapGlyphs
+from starmap import MapScene
+from projects import ProjectManager
+from forms import WorldBrowser
+from forms import AllegianceEditor
+from forms import Trade
 from categories import WorldGenerator
-import yapsy.PluginManager as PluginManager
-####from forms import Trade
-import resources.starmap_rc as starmap_rc
-import log as log
+from yapsy.PluginManager import PluginManager
+#from forms import Trade
+from resources import starmap_rc
+import log
 
 log.set_logger()
 

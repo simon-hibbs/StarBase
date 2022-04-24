@@ -22,7 +22,7 @@ from PySide.QtGui import *
 class RichTextLineEdit(QTextEdit):
 
     (Bold, Italic, Underline, StrikeOut, Monospaced, Sans, Serif,
-     NoSuperOrSubscript, Subscript, Superscript) = list(range(10))
+     NoSuperOrSubscript, Subscript, Superscript) = range(10)
 
 
     def __init__(self, parent=None):
@@ -235,7 +235,7 @@ class RichTextLineEdit(QTextEdit):
                         text = "<font{0}>{1}</font>".format(attribs, text)
                     html += text
                 iterator += 1
-            block = next(block)
+            block = block.next()
         return html
 
 
@@ -245,8 +245,8 @@ if __name__ == "__main__":
     lineedit.show()
     lineedit.setWindowTitle("RichTextEdit")
     app.exec_()
-    print(str(lineedit.toHtml()))
-    print(str(lineedit.toPlainText()))
-    print(str(lineedit.toSimpleHtml()))
+    print unicode(lineedit.toHtml())
+    print unicode(lineedit.toPlainText())
+    print unicode(lineedit.toSimpleHtml())
 
 

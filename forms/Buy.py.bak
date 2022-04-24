@@ -542,7 +542,7 @@ class TradeReport(object):
         cursor.movePosition(QTextCursor.End, QTextCursor.MoveAnchor)
 
         #Freight
-        print(self.saleData.freightList)
+        print self.saleData.freightList
         cursor.insertBlock()
         cursor.setBlockFormat(heading_block_format)
         cursor.insertText('Freight Lots bound for ' + \

@@ -1483,7 +1483,7 @@ class LongNumberText(QLineEdit):
     def setText(self, text):
         locale.setlocale(locale.LC_ALL, "")
         newText = locale.format('%d', int(text), True)
-        print(newText)
+        print newText
         QLineEdit.setText(newText)
 
 
@@ -1837,7 +1837,7 @@ class World(object):
         self.tradeWa = Wa
 
     def addFactions(self):
-        KEY,SIZE,LABEL = list(range(3))
+        KEY,SIZE,LABEL = range(3)
         factions = []
         for f in range(random.randint(1, 3) + self.government.factionModifier):
             roll = d6() + d6()

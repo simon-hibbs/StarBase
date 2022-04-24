@@ -23,7 +23,7 @@ SECTORS = 3
 
 class MapScene(QtGui.QGraphicsScene):
     # TODO: INSERT_TEXT_MODE and MOVE_ITEM_MODE not yet implemented
-    SELECT_MODE, RUBBER_BAND_MODE, HAND_DRAG_MODE, INSERT_TEXT_MODE, MOVE_ITEM_MODE  = range(5)
+    SELECT_MODE, RUBBER_BAND_MODE, HAND_DRAG_MODE, INSERT_TEXT_MODE, MOVE_ITEM_MODE  = list(range(5))
 
     changeCellsSelectable = QtCore.Signal(bool)
     setFromTradeWorld = QtCore.Signal()
@@ -154,7 +154,7 @@ class MapScene(QtGui.QGraphicsScene):
 
     def setSelectionType(self, selectionType):
         self.selectionType = selectionType
-        for item in self.items():
+        for item in list(self.items()):
             item.setSelected(False)
             item.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, False)
 

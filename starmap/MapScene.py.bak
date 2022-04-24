@@ -1,6 +1,11 @@
+#import sip
+#sip.setapi('QString', 2)
+#sip.setapi('QVariant', 2)
+
 import sys
+import os
 import math
-from PyQt4 import QtCore, QtGui
+from PySide import QtCore, QtGui
 from log import *
 from model import Models
 from starmap import MapGlyphs
@@ -17,17 +22,18 @@ SUBSECTORS = 2
 SECTORS = 3
 
 class MapScene(QtGui.QGraphicsScene):
-    SelectCells, RubberBand, HandDrag, InsertText, MoveItem  = range(5)
+    # TODO: INSERT_TEXT_MODE and MOVE_ITEM_MODE not yet implemented
+    SELECT_MODE, RUBBER_BAND_MODE, HAND_DRAG_MODE, INSERT_TEXT_MODE, MOVE_ITEM_MODE  = range(5)
 
-    changeCellsSelectable = QtCore.pyqtSignal(bool)
-    setFromTradeWorld = QtCore.pyqtSignal(str)
-    setToTradeWorld = QtCore.pyqtSignal(str)
+    changeCellsSelectable = QtCore.Signal(bool)
+    setFromTradeWorld = QtCore.Signal()
+    setToTradeWorld = QtCore.Signal()
 
     def __init__(self, model, parent=None):
         QtGui.QGraphicsScene.__init__(self, parent)
 
         self.model = model
-        self.myMode = self.SelectCells
+        self.myMode = self.SELECT_MODE
         self.selectionType = 'Worlds'
 
         self.dialogs = {}
@@ -74,12 +80,42 @@ class MapScene(QtGui.QGraphicsScene):
     def setCellsSelectable(self, flag):
         self.changeCellsSelectable.emit(flag)
 
+    def selectGroup(self, index):
+        if index <= (len(self.model.groupNames) - 1):
+            self.setCellsSelectable(False)
+            self.setCellsSelectable(True)
+            self.grid.selectCells(self.model.groupCells[index])
+        else:
+            debug_log('Group index ' + str(index) + ' not valid.')
+            debug_log('model.groupNames: ' + str(self.model.groupNames))
+
 ##    def focusOutEvent(self, event):
 ##        self.clearSelection()
 ##        QGraphicsScene.focusOutEvent(event)
 
     def toggleAllegianceDisplay(self, checked):
         self.grid.toggleAllegianceDisplay(checked)
+
+    def setAllegiance(self, code):
+        cell_list = []
+        
+        if self.selectionType == 'Hexes':
+            for cell in self.selectedItems():
+                cell_list.append(cell)
+
+        elif self.selectionType == 'Sectors':
+            for sector in self.selectedItems():
+                cell_list = cell_list + sector.cells
+
+        elif self.selectionType == 'Subsectors':
+            for subsector in self.selectedItems():
+                cell_list = cell_list + subsector.cells
+
+        for cell in cell_list:
+            pmi = self.grid.worldPmiAt(cell.col, cell.row)
+            if pmi is not None:
+                self.model.setAllegianceCode(pmi, code)
+
 
     def viewMoveDetected(self, value):
         pass
@@ -123,7 +159,7 @@ class MapScene(QtGui.QGraphicsScene):
             item.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, False)
 
             try:
-                if selectionType == 'Cells' \
+                if selectionType == 'Hexes' \
                    and item.itemType == MapGlyphs.GRID_CELL_TYPE:
                     item.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
                 elif selectionType == 'Subsectors' \
@@ -134,6 +170,23 @@ class MapScene(QtGui.QGraphicsScene):
                     item.setFlag(QtGui.QGraphicsItem.ItemIsSelectable, True)
             except:
                 pass
+
+##    def addCellsToGroup(self, cell_list):
+##        coord_list = []
+##        for cell in cell_list:
+##            coord_list.append((cell.col, cell.row))
+##        self.model.addCellsToSelectedGroup(coord_list)
+
+    def addCellsToGroup(self, index):
+        if self.selectionType == 'Hexes':
+            cell_list = []
+            for cell in self.selectedItems():
+                cell_list.append(cell)
+
+        coord_list = []
+        for cell in cell_list:
+            coord_list.append((cell.col, cell.row))
+        self.model.addCellsToGroup(index, coord_list)
 
     def populateCells(self, cell_list, random_occurrence=True):
         progress = QtGui.QProgressDialog('Populating selected region',
@@ -148,15 +201,10 @@ class MapScene(QtGui.QGraphicsScene):
                 self.model.removeRow(pmi.row())
             
             if self.model.rollToPopulate() or not random_occurrence:
-                last_row = self.model.rowCount() - 1
+                last_row = self.model.rowCount()
                 self.model.currentCell =(cell.col, cell.row)
                 self.model.insertRandomWorld(last_row)
 
-##                col_index = self.model.index(last_row, Models.COL)
-##                row_index = self.model.index(last_row, Models.ROW)
-##
-##                self.model.setData(col_index, QtCore.QVariant(cell.col))
-##                self.model.setData(row_index, QtCore.QVariant(cell.row))
             count = count + 1
             progress.setValue(count)
         
@@ -166,7 +214,7 @@ class MapScene(QtGui.QGraphicsScene):
         if len(self.selectedItems()) == 0:
             return
 
-        if self.selectionType == 'Cells':
+        if self.selectionType == 'Hexes':
             
             cell_list = []
             for cell in self.selectedItems():
@@ -183,11 +231,16 @@ class MapScene(QtGui.QGraphicsScene):
                 addWorld = False
                 editWorld = False
                 worldReport = False
+                tradeFrom = False
+                tradeTo = False
                 removeWorld = False
 
                 if pmi is not None:
                     editWorld = menu.addAction('Edit World')
                     worldReport = menu.addAction('View Report')
+                    tradeFrom = menu.addAction('Trade From Here')
+                    tradeTo = menu.addAction('Trade To Here')
+                    separator = menu.addSeparator()
                     removeWorld = menu.addAction('Remove World')
                 else:
                     addWorld = menu.addAction('Add World')
@@ -196,27 +249,35 @@ class MapScene(QtGui.QGraphicsScene):
         
                 if selectedAction == editWorld:
                     myView = self.views()[0]
-                    self.dialogs[pmi] = WorldDialogs.EditWorldDialog(
+                    self.dialog = WorldDialogs.EditWorldDialog(
                                                 pmi,
                                                 parent=myView)
-                    self.dialogs[pmi].show()
-                    self.dialogs[pmi].raise_()
-                    self.dialogs[pmi].activateWindow()
+                    self.dialog.show()
+                    self.dialog.raise_()
+                    self.dialog.activateWindow()
 
-                    # Clean up dead edit dialogs, needs to be automatic
-                    for key, value in self.dialogs.items():
-                        try:
-                            hidden = value.isHidden()
-                        except:
-                            del self.dialogs[key]
+##                    # Clean up dead edit dialogs, needs to be automatic
+##                    for key, value in self.dialogs.items():
+##                        try:
+##                            hidden = value.isHidden()
+##                        except:
+##                            del self.dialogs[key]
 
                 elif selectedAction == worldReport:
                     myView = self.views()[0]
-                    self.reportDialog = WorldReport.WorldReportDialog(pmi,
+                    self.dialog = WorldReport.WorldReportDialog(pmi,
                                                                       parent=myView)
-                    self.reportDialog.show()
-                    self.reportDialog.raise_()
-                    self.reportDialog.activateWindow()
+                    self.dialog.show()
+                    self.dialog.raise_()
+                    self.dialog.activateWindow()
+
+                elif selectedAction == tradeFrom:
+                    self.model.fromTradeWorldPmi = pmi
+                    self.setFromTradeWorld.emit()
+
+                elif selectedAction == tradeTo:
+                    self.model.toTradeWorldPmi = pmi
+                    self.setToTradeWorld.emit()
 
                 elif selectedAction == addWorld:
                     self.populateCells(cell_list, False)
@@ -256,8 +317,10 @@ class MapScene(QtGui.QGraphicsScene):
 
                 if len(pmi_list) == 0:
                     generateRegion = menu.addAction('Generate Region')
+                    populateAll = menu.addAction('Populate All Hexes')
                 else:
                     deleteWorlds = menu.addAction('Delete Selected Worlds')
+                    populateAll = menu.addAction('Populate All Hexes')
                     reGenerateWorlds = menu.addAction('Re-Generate Selected Worlds')
                     reGenerateRegion = menu.addAction('Re-Generate Region')
                     statistics = menu.addAction('Statistics')
@@ -271,7 +334,10 @@ class MapScene(QtGui.QGraphicsScene):
 ##                elif selectedAction == addLink:
 ##                    self.model.addLink(row1, row2)
 ##                    # Also need to add to map
-                
+
+                if selectedAction == populateAll:
+                    self.populateCells(cell_list, random_occurrence=False)
+
                 if selectedAction == generateRegion \
                         or selectedAction == reGenerateRegion:
                     self.populateCells(cell_list, random_occurrence=True)
@@ -286,22 +352,21 @@ class MapScene(QtGui.QGraphicsScene):
 
                 elif selectedAction == statistics:
                     myView = self.views()[0]
-                    self.dialogs[(str(cell_list[0]), str(pmi_list[0]))] = \
-                                         StatisticsDialog.StatisticsDialog(
+                    self.dialog = StatisticsDialog.StatisticsDialog(
                                              pmi_list,
                                              len(cell_list),
                                              '',
                                              parent=myView)
-                    self.dialogs[(str(cell_list[0]), str(pmi_list[0]))].show()
-                    self.dialogs[(str(cell_list[0]), str(pmi_list[0]))].raise_()
-                    self.dialogs[(str(cell_list[0]), str(pmi_list[0]))].activateWindow()
+                    self.dialog.show()
+                    self.dialog.raise_()
+                    self.dialog.activateWindow()
 
-                    # Clean up dead edit dialogs, needs to be automatic
-                    for key, value in self.dialogs.items():
-                        try:
-                            hidden = value.isHidden()
-                        except:
-                            del self.dialogs[key]
+##                    # Clean up dead edit dialogs, needs to be automatic
+##                    for key, value in self.dialogs.items():
+##                        try:
+##                            hidden = value.isHidden()
+##                        except:
+##                            del self.dialogs[key]
 
 
         elif self.selectionType == 'Sectors':
@@ -315,6 +380,7 @@ class MapScene(QtGui.QGraphicsScene):
             populateSector = False
             deleteWorlds = False
             statistics = False
+            importSec = False
             
             if len(sector_list) == 1:
                 renameSector = menu.addAction('Rename Sector')
@@ -322,6 +388,7 @@ class MapScene(QtGui.QGraphicsScene):
                 populateSector = menu.addAction('Generate Sector')
                 deleteWorlds = menu.addAction('Delete Worlds')
                 statistics = menu.addAction('Show Statistics')
+                importSEC = menu.addAction('Import SEC file')
 
             elif len(sector_list) > 1:
                 populateSector = menu.addAction('Generate Sectors')
@@ -347,22 +414,21 @@ class MapScene(QtGui.QGraphicsScene):
                 col = sector_list[0].sectorCol
                 row = sector_list[0].sectorRow
                 myView = self.views()[0]
-                self.dialogs[('sec', col, row)] = \
-                                     PreviewMap.PreviewDialog(
+                self.dialog = PreviewMap.PreviewDialog(
                                          old_glyph=sector_list[0],
                                          region_type=PreviewMap.SECTOR, 
                                          model=self.model,
                                          parent=myView)
-                self.dialogs[('sec', col, row)].show()
-                self.dialogs[('sec', col, row)].raise_()
-                self.dialogs[('sec', col, row)].activateWindow()
+                self.dialog.show()
+                self.dialog.raise_()
+                self.dialog.activateWindow()
 
-                # Clean up dead edit dialogs, needs to be automatic
-                for key, value in self.dialogs.items():
-                    try:
-                        hidden = value.isHidden()
-                    except:
-                        del self.dialogs[key]
+##                # Clean up dead edit dialogs, needs to be automatic
+##                for key, value in self.dialogs.items():
+##                    try:
+##                        hidden = value.isHidden()
+##                    except:
+##                        del self.dialogs[key]
 
             if selectedAction == populateSector:
                 cell_list = []
@@ -389,23 +455,36 @@ class MapScene(QtGui.QGraphicsScene):
                     pmi = self.model.getPmiAt(cell.col, cell.row)
                     if pmi != None:
                         pmi_list.append(pmi)
-                myView = self.views()[0]
-                self.dialogs[(str(cell_list[0]), str(pmi_list[0]))] = \
-                                     StatisticsDialog.StatisticsDialog(
-                                         pmi_list,
-                                         len(cell_list),
-                                         '',
-                                         parent=myView)
-                self.dialogs[(str(cell_list[0]), str(pmi_list[0]))].show()
-                self.dialogs[(str(cell_list[0]), str(pmi_list[0]))].raise_()
-                self.dialogs[(str(cell_list[0]), str(pmi_list[0]))].activateWindow()
+                if len(pmi_list) > 0:
+                    myView = self.views()[0]
+                    self.dialog = StatisticsDialog.StatisticsDialog(
+                                             pmi_list,
+                                             len(cell_list),
+                                             '',
+                                             parent=myView)
+                    self.dialog.show()
+                    self.dialog.raise_()
+                    self.dialog.activateWindow()
 
-                # Clean up dead edit dialogs, needs to be automatic
-                for key, value in self.dialogs.items():
-                    try:
-                        hidden = value.isHidden()
-                    except:
-                        del self.dialogs[key]
+##                # Clean up dead edit dialogs, needs to be automatic
+##                for key, value in self.dialogs.items():
+##                    try:
+##                        hidden = value.isHidden()
+##                    except:
+##                        del self.dialogs[key]
+
+            elif selectedAction == importSEC:
+                sector = sector_list[0]
+                myView = self.views()[0]
+                default_path = self.model.project_path
+                filename = QtGui.QFileDialog.getOpenFileName(myView,
+                                                'Open .SEC file',
+                                                default_path,
+                                                'SEC Files (*.SEC)')
+                self.model.importSEC(filename,
+                                     sector.sectorCol,
+                                     sector.sectorRow)
+                debug_log('SEC import complete')
 
 
         elif self.selectionType == 'Subsectors':
@@ -453,22 +532,21 @@ class MapScene(QtGui.QGraphicsScene):
                 col = subsector_list[0].subsectorCol
                 row = subsector_list[0].subsectorRow
                 myView = self.views()[0]
-                self.dialogs[('sub', col, row)] = \
-                                     PreviewMap.PreviewDialog(
+                self.dialog = PreviewMap.PreviewDialog(
                                          old_glyph=subsector_list[0],
                                          region_type=PreviewMap.SUBSECTOR, 
                                          model=self.model,
                                          parent=myView)
-                self.dialogs[('sub', col, row)].show()
-                self.dialogs[('sub', col, row)].raise_()
-                self.dialogs[('sub', col, row)].activateWindow()
+                self.dialog.show()
+                self.dialog.raise_()
+                self.dialog.activateWindow()
 
-                # Clean up dead edit dialogs, needs to be automatic
-                for key, value in self.dialogs.items():
-                    try:
-                        hidden = value.isHidden()
-                    except:
-                        del self.dialogs[key]
+##                # Clean up dead edit dialogs, needs to be automatic
+##                for key, value in self.dialogs.items():
+##                    try:
+##                        hidden = value.isHidden()
+##                    except:
+##                        del self.dialogs[key]
 
             elif selectedAction == subsectorReport:
                 pmi_list = []
@@ -482,22 +560,21 @@ class MapScene(QtGui.QGraphicsScene):
                 myView = self.views()[0]
                 col = subsector_list[0].subsectorCol
                 row = subsector_list[0].subsectorRow
-                self.dialogs[('subrep', col, row)] = \
-                        SubsectorReport.SubsectorReportDialog(
-                            subsector_glyph=subsector_list[0],
-                            pmi_list=pmi_list,
-                            model=self.model,
-                            parent=myView)
-                self.dialogs[('subrep', col, row)].show()
-                self.dialogs[('subrep', col, row)].raise_()
-                self.dialogs[('subrep', col, row)].activateWindow()
+                self.dialog = SubsectorReport.SubsectorReportDialog(
+                                    subsector_glyph=subsector_list[0],
+                                    pmi_list=pmi_list,
+                                    model=self.model,
+                                    parent=myView)
+                self.dialog.show()
+                self.dialog.raise_()
+                self.dialog.activateWindow()
 
-                # Clean up dead edit dialogs, needs to be automatic
-                for key, value in self.dialogs.items():
-                    try:
-                        hidden = value.isHidden()
-                    except:
-                        del self.dialogs[key]
+##                # Clean up dead edit dialogs, needs to be automatic
+##                for key, value in self.dialogs.items():
+##                    try:
+##                        hidden = value.isHidden()
+##                    except:
+##                        del self.dialogs[key]
             
             elif selectedAction == populateSubsector:
                 cell_list = []
@@ -525,50 +602,50 @@ class MapScene(QtGui.QGraphicsScene):
                     if pmi != None:
                         pmi_list.append(pmi)
                 myView = self.views()[0]
-                self.dialogs[(str(cell_list[0]), str(pmi_list[0]))] = \
-                                     StatisticsDialog.StatisticsDialog(
+                self.dialog = StatisticsDialog.StatisticsDialog(
                                          pmi_list,
                                          len(cell_list),
                                          '',
                                          parent=myView)
-                self.dialogs[(str(cell_list[0]), str(pmi_list[0]))].show()
-                self.dialogs[(str(cell_list[0]), str(pmi_list[0]))].raise_()
-                self.dialogs[(str(cell_list[0]), str(pmi_list[0]))].activateWindow()
+                self.dialog.show()
+                self.dialog.raise_()
+                self.dialog.activateWindow()
 
-                # Clean up dead edit dialogs, needs to be automatic
-                for key, value in self.dialogs.items():
-                    try:
-                        hidden = value.isHidden()
-                    except:
-                        del self.dialogs[key]
+##                # Clean up dead edit dialogs, needs to be automatic
+##                for key, value in self.dialogs.items():
+##                    try:
+##                        hidden = value.isHidden()
+##                    except:
+##                        del self.dialogs[key]
 
 
     def mousePressEvent(self, mouseEvent):
         if (mouseEvent.button() != QtCore.Qt.LeftButton):
             return
 
-        if self.myMode == self.SelectCells:
+        if self.myMode == self.SELECT_MODE:
             QtGui.QGraphicsScene.mousePressEvent(self, mouseEvent)
 
-        elif self.myMode == self.RubberBand:
+        elif self.myMode == self.RUBBER_BAND_MODE:
             pass    # Don't propagate mouse events to the default handler
             #QtGui.QGraphicsScene.mousePressEvent(self, mouseEvent)
-        elif self.myMode == self.HandDrag:
+        elif self.myMode == self.HAND_DRAG_MODE:
             pass    # Don't propagate mouse events to the default handler
-        elif self.myMode == self.InsertText:
-            textItem = MapTextItem()
-            textItem.setFont(self.myFont)
-            textItem.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
-            textItem.setZValue(1000.0)
-            self.connect(textItem, QtCore.SIGNAL("lostFocus"),
-                    self.editorLostFocus)
-            self.connect(textItem, QtCore.SIGNAL("selectedChange"),
-                    self, QtCore.SIGNAL("itemSelected(QGraphicsItem *)"))
-            self.addItem(textItem)
-            textItem.setDefaultTextColor(self.myTextColor)
-            textItem.setPos(mouseEvent.scenePos())
-            self.emit(QtCore.SIGNAL("textInserted"), textItem)
-            QtGui.QGraphicsScene.mousePressEvent(self, mouseEvent)
+##        elif self.myMode == self.INSERT_TEXT_MODE:
+##            textItem = MapTextItem()
+##            textItem.setFont(self.myFont)
+##            textItem.setTextInteractionFlags(QtCore.Qt.TextEditorInteraction)
+##            textItem.setZValue(1000.0)
+##            self.connect(textItem, QtCore.SIGNAL("lostFocus"),
+##                    self.editorLostFocus)
+##            self.connect(textItem, QtCore.SIGNAL("selectedChange"),
+##                    self, QtCore.SIGNAL("itemSelected(QGraphicsItem *)"))
+##            
+##            self.addItem(textItem)
+##            textItem.setDefaultTextColor(self.myTextColor)
+##            textItem.setPos(mouseEvent.scenePos())
+##            self.emit(QtCore.SIGNAL("textInserted"), textItem)
+##            QtGui.QGraphicsScene.mousePressEvent(self, mouseEvent)
         else:
             QtGui.QGraphicsScene.mousePressEvent(self, mouseEvent)
 

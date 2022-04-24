@@ -2,12 +2,12 @@
 #sip.setapi('QString', 2)
 #sip.setapi('QVariant', 2)
 
-import sys, os, traceback
+import sys, os
 from PySide.QtCore import *
 from PySide.QtGui import *
 from log import *
 #import qrc_resources
-from configparser import SafeConfigParser
+from ConfigParser import SafeConfigParser
 from model import Models
 from model import Traveller
 
@@ -86,13 +86,10 @@ If the directory already contains a project, with will not be over-written.
             project_path = self.projects[self.projectListWidget.currentRow()]
             self.model.loadProjectData(project_path)
             QDialog.done(self, 1)
-        except Exception as e:
-            debug_log('Exception in ProjectManager opeing project: ' + str(e))
+        except Exception, e:
+            debug_log(str(e))
             debug_log('Current Row: ' + str(self.projectListWidget.currentRow()))
             debug_log('Projects list ' + str(self.projects))
-            trace = traceback.format_exception(None, # <- type(e) by docs, but ignored 
-                                     e, e.__traceback__)
-            print(*trace, file=sys.stderr, flush=True)
 
     def newProject(self):
         if len(self.projects) == 0:
@@ -120,14 +117,14 @@ If the directory already contains a project, with will not be over-written.
             
                 self.writeProjectsFile()
         
-    @logmethod
+
     def makeDefaultProject(self):
         #config = SafeConfigParser()
         #config.read('projects.ini')
         self.defaultProject = self.projectListWidget.currentRow()
         self.config.set('Projects', 'default_project',
                    str(self.defaultProject))
-        with open('projects.ini', 'w') as projects_file:
+        with open('projects.ini', 'wb') as projects_file:
             self.config.write(projects_file)
 
     def removeProject(self):
@@ -228,7 +225,7 @@ If the directory already contains a project, with will not be over-written.
 ##            else:
 ##                debug_log('Path not found, broken project entry!')
         self.config.set('Projects', 'default_project', str(self.defaultProject))
-        with open('projects.ini', 'w') as projects_file:
+        with open('projects.ini', 'wb') as projects_file:
             self.config.write(projects_file)
 
         
@@ -249,8 +246,8 @@ If the directory already contains a project, with will not be over-written.
                 try:
                     if os.path.isfile(file_path):
                         os.unlink(file_path)
-                except Exception as e:
-                    print(e)
+                except Exception, e:
+                    print e
         
         sectors = 'Sector Name,Column,Row\n'
         subsectors = 'Subsector Name,Column,Row\n'

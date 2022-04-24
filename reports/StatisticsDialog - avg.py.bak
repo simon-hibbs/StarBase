@@ -343,7 +343,7 @@ class StatisticsReport(object):
         cursor.setBlockFormat(title_block_format)
         cursor.insertText('Trade Code Frequency', title_text_format)
 
-        print('About to generate trade code table')
+        print 'About to generate trade code table'
 
         trade_table = cursor.insertTable(19, 2, form_table_format)
         count = 0

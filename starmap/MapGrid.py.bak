@@ -69,7 +69,7 @@ class SectorRoot(QtGui.QGraphicsItem):
         self.grid[(sector_x, sector_y)].setName(name)
 
     def showSectorNames(self, flag):
-        for sector in self.grid.values():
+        for sector in self.grid.itervalues():
             sector.showName(flag)
 
 

@@ -9,7 +9,7 @@ from PySide.QtGui import *
 import os
 import shutil
 import csv
-from configparser import SafeConfigParser
+from ConfigParser import SafeConfigParser
 from log import *
 import random
 import math
@@ -21,7 +21,7 @@ from model import Merchant
 from categories import WorldGenerator
 from yapsy.PluginManager import PluginManager
 try:
-    import pickle as pickle
+    import cPickle as pickle
 except:
     import pickle
 
@@ -186,8 +186,6 @@ class WorldModel(QAbstractTableModel):
         self.config_file = os.path.join(self.project_path ,  'starbase.ini')
 
         self.config = SafeConfigParser()
-        
-        debug_log('Reading config file' + self.config_file)
         self.config.read(self.config_file)
 
         self.secsWide = self.config.getint('Map', 'SectorGridWidth')
@@ -572,17 +570,12 @@ class WorldModel(QAbstractTableModel):
 
         return upp
 
-    @logmethod
+
     def slugify(self, name):
-        name = str(name)
-        info_log("Normalize Unicode")
+        name = unicode(name)
         name = unicodedata.normalize('NFKD', name).encode('ascii', 'ignore')
-        info_log("Lowercase")
-        name = re.sub(b'[^\w\s-]', b'', bytes(name)).strip().lower()
-        info_log("Replace whitespace with dashes")
-        name = re.sub(b'[-\s]+', b'-', bytes(name))
-        info_log("Slugified name is:" + str(name))
-        return str(name)
+        name = unicode(re.sub('[^\w\s-]', '', name).strip().lower())
+        return str(re.sub('[-\s]+', '-', name))
 
 
     def storeWorldImage(self, world_name, image):
@@ -634,7 +627,7 @@ class WorldModel(QAbstractTableModel):
             try:
                 shutil.rmtree(path)
                 debug_log('Deleted ' + path)
-            except Exception as e:
+            except Exception, e:
                 debug_log('Failed to delete ' + path)
                 debug_log(e)
                 return False
@@ -1637,14 +1630,13 @@ class WorldModel(QAbstractTableModel):
 
 
     def loadSectors(self):
-        info_log('Loading Sectors from ' + self.sectors_file)
+        debug_log('Loading Sectors')
         exception = None
         f = open(self.sectors_file, "r")
         self.sectors = []
         try:
             reader = csv.reader(f, dialect='excel')
             for line in reader:
-                info_log('sectors file line:' + str(line))
                 if line[0] != "Sector Name":
                     name, column, row = line[0], int(line[1]), int(line[2])
                     if  0 <= column <= (self.secsWide - 1) and \
@@ -1656,7 +1648,7 @@ class WorldModel(QAbstractTableModel):
                                   '    secsHigh = ' + str(self.secsHigh))
                         debug_log('')
                                   
-        except IOError as e:
+        except IOError, e:
             exception = e
             debug_log(e)
         finally:
@@ -1696,7 +1688,7 @@ class WorldModel(QAbstractTableModel):
                                   '    secsHigh = ' + str(self.secsHigh))
                         debug_log('Subsector col= ' + str(column) + '    ' + \
                                   'Subsector row= ' + str(row))
-        except IOError as e:
+        except IOError, e:
             exception = e
             debug_log(e)
         finally:
@@ -1729,7 +1721,6 @@ class WorldModel(QAbstractTableModel):
             if text == 'Yes': return True
             else: return False
         
-        debug_log('Load world data')
         exception = None
         f = open(self.worlds_file, "r")
         self.worlds = []
@@ -1783,21 +1774,18 @@ class WorldModel(QAbstractTableModel):
                 self.worlds.append(world)
                 #debug_log(self.getUWP(len(self.worlds) - 1))
 
-        except IOError as e:
+        except IOError, e:
             exception = e
         finally:
             f.close()
             self.dirty = False
             self.reset()
 
-        debug_log('Load custom user text')
+        # Load custom user text
         for world in self.worlds:
-            info_log('Generate world path')
             world_path = os.path.join(self.project_path, 'worlds',  self.slugify(world.name))
-            
-            info_log('Check for world path')
             if os.path.exists(world_path):
-                                
+                
                 filepath = os.path.join(world_path,'Starport.txt')
                 if os.path.exists(filepath):
                     world.starport.userText = self.retrieveTextData(world.name, 'Starport.txt')
@@ -1835,10 +1823,9 @@ class WorldModel(QAbstractTableModel):
                     world.temperature.userText = self.retrieveTextData(world.name, 'Temperature.txt')
 
         # Load Cell Group data
-        debug_log('Load cell group data')
         group_filename = os.path.join(self.project_path, 'HexGroupData.dat')
         if os.path.exists(group_filename):
-            with open(group_filename, "rb") as group_file: # changed from "rb"
+            with open(group_filename, "rb") as group_file:
                 self.groupNames = pickle.load(group_file)
                 self.groupCells = pickle.load(group_file)
 
@@ -1857,7 +1844,7 @@ class WorldModel(QAbstractTableModel):
 
         # Save worlds csv file
         exception = None
-        f = open(self.worlds_file, "w", newline='')
+        f = open(self.worlds_file, "wb")
         try:
             writer = csv.DictWriter(f,
                                     dialect='excel',
@@ -1909,7 +1896,7 @@ class WorldModel(QAbstractTableModel):
                                   'Va' : setYesNo(world.tradeVa),
                                   'Wa' : setYesNo(world.tradeWa)
                                   })
-        except IOError as  e:
+        except IOError,  e:
             exception = e
         finally:
             f.close()
@@ -1966,7 +1953,7 @@ class WorldModel(QAbstractTableModel):
 
         # Save Sector Data
         exception = None
-        f = open(self.sectors_file, "w", newline='')
+        f = open(self.sectors_file, "wb")
         try:
             writer = csv.writer(f, dialect='excel', quoting=csv.QUOTE_NONNUMERIC)
             writer.writerow( ('Sector Name',  'Column',  'Row') )
@@ -1974,14 +1961,14 @@ class WorldModel(QAbstractTableModel):
                 writer.writerow( (sector.name,
                                   sector.sectorCol,
                                   sector.sectorRow) )
-        except IOError as  e:
+        except IOError,  e:
             exception = e
         finally:
             f.close()
 
         # Save Subsector Data
         exception = None
-        f = open(self.subsectors_file, "w", newline='')
+        f = open(self.subsectors_file, "wb")
         try:
             writer = csv.writer(f, dialect='excel', quoting=csv.QUOTE_NONNUMERIC)
             writer.writerow( ('Subsector Name',  'Column',  'Row') )
@@ -1989,7 +1976,7 @@ class WorldModel(QAbstractTableModel):
                 writer.writerow( (subsector.name,
                                   subsector.subsectorCol,
                                   subsector.subsectorRow) )
-        except IOError as  e:
+        except IOError,  e:
             exception = e
         finally:
             f.close()

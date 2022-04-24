@@ -442,65 +442,65 @@ class BaseGlyphs(QtGui.QGraphicsItem):
         #outlinePen = QtGui.QPen()
         
         #char = QtCore.QChar(0xAB)
-        #char = binascii.unhexlify('AB')
+        char = binascii.unhexlify('AB')
         symbol = QtGui.QGraphicsSimpleTextItem(self)
-        symbol.setFont(QtGui.QFont('Helvetica', self.fontSize,
+        symbol.setFont(QtGui.QFont('Wingdings', self.fontSize,
                                    QtGui.QFont.Normal, False))
-        symbol.setText(str('\u2605'))
+        symbol.setText(char)
         symbol.setPen(outlinePen)
         symbol.hide()
         self.backgrounds['navy'] = symbol
         
         symbol = QtGui.QGraphicsSimpleTextItem(self)
-        symbol.setFont(QtGui.QFont('Windings', self.fontSize,
+        symbol.setFont(QtGui.QFont('Helvetica', self.fontSize,
                                    QtGui.QFont.Normal, False))
-        symbol.setText(str('\u25B2'))
+        symbol.setText(u'\u25B2')
         symbol.setPen(outlinePen)
         symbol.hide()
         self.backgrounds['scout'] = symbol
         
         #char = QtCore.QChar(0x70)
-        #char = binascii.unhexlify('70')
+        char = binascii.unhexlify('70')
         symbol = QtGui.QGraphicsSimpleTextItem(self)
-        symbol.setFont(QtGui.QFont('Helvetica', self.fontSize,
+        symbol.setFont(QtGui.QFont('Symbol', self.fontSize,
                                    QtGui.QFont.Normal, False))
-        symbol.setText(str('\u03C0'))
+        symbol.setText(str(char))
         symbol.setPen(outlinePen)
         symbol.hide()
         self.backgrounds['research'] = symbol
         
         #char = QtCore.QChar(0x52)
-        #char = binascii.unhexlify('52')
+        char = binascii.unhexlify('52')
         symbol = QtGui.QGraphicsSimpleTextItem(self)
-        symbol.setFont(QtGui.QFont('Helvetica', self.fontSize,
+        symbol.setFont(QtGui.QFont('Wingdings', self.fontSize,
                                    QtGui.QFont.Normal, False))
-        symbol.setText(str('\u263C'))
+        symbol.setText(str(char))
         symbol.setPen(outlinePen)
         symbol.hide()
         self.backgrounds['tas'] = symbol
         
         #char = QtCore.QChar(0x6E)
-        #char = binascii.unhexlify('6E')
+        char = binascii.unhexlify('6E')
         symbol = QtGui.QGraphicsSimpleTextItem(self)
-        symbol.setFont(QtGui.QFont('Helvetica', self.fontSize,
+        symbol.setFont(QtGui.QFont('Wingdings', self.fontSize,
                                    QtGui.QFont.Normal, False))
-        symbol.setText(str('\u25A0'))
+        symbol.setText(str(char))
         symbol.setPen(outlinePen)
         symbol.hide()
         self.backgrounds['consulate'] = symbol
         
         #char = QtCore.QChar(0x4E)
-        #char = binascii.unhexlify('4E')
+        char = binascii.unhexlify('4E')
         symbol = QtGui.QGraphicsSimpleTextItem(self)
-        symbol.setFont(QtGui.QFont('Helvetica', self.fontSize,
+        symbol.setFont(QtGui.QFont('Wingdings', self.fontSize,
                                    QtGui.QFont.Normal, False))
-        symbol.setText(str('\u2620'))
+        symbol.setText(str(char))
         symbol.setPen(outlinePen)
         symbol.hide()
         self.backgrounds['pirate'] = symbol
 
         self.symbols = {}
-        for (base_type, symbol) in self.backgrounds.items():
+        for (base_type, symbol) in self.backgrounds.iteritems():
             new_symbol = QtGui.QGraphicsSimpleTextItem(self)
             new_symbol.setText(symbol.text())
             new_symbol.setFont(symbol.font())
@@ -516,16 +516,16 @@ class BaseGlyphs(QtGui.QGraphicsItem):
         return self._type
 
     def hideGlyphs(self):
-        for symbol in self.symbols.values():
+        for symbol in self.symbols.itervalues():
             symbol.hide()
-        for background in self.backgrounds.values():
+        for background in self.backgrounds.itervalues():
             background.hide()
 
     def config(self, navy=False, scout=False, research=False,
                tas=False, consulate=False, pirate=False):
-        for symbol in self.symbols.values():
+        for symbol in self.symbols.itervalues():
             symbol.hide()
-        for background in self.backgrounds.values():
+        for background in self.backgrounds.itervalues():
             background.hide()
         
         display_list = []
